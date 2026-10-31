@@ -1,7 +1,7 @@
 use std::{io::Write, os::unix::net::UnixStream};
 
 use clap::{Parser, Subcommand};
-use messages::Messages;
+use daemon_messages::Messages;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
