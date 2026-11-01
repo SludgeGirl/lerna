@@ -8,3 +8,5 @@ env_logger = "0.11.11"
 log = "0.4.35"
 sysinfo = "0.40.1"
 daemon-messages = { path = "../daemon-messages" }
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread"] }
+welds = { version = "0.5.2", features = ["sqlite"] }

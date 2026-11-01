@@ -8,6 +8,7 @@ use std::{
 
 use log::info;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
+use welds::connections::any::AnyClient;
 
 const DEFAULT_LOCK_PATH: &str = "/tmp/rst.lock";
 
@@ -15,14 +16,16 @@ pub struct DaemonSocket {
     pub path: PathBuf,
     pub listener: Option<UnixListener>,
     pub lock_created: bool,
+    pub database_client: AnyClient,
 }
 
 impl DaemonSocket {
-    pub fn new(path: &Path) -> Self {
+    pub fn new(database_client: AnyClient, path: &Path) -> Self {
         DaemonSocket {
             path: path.to_path_buf(),
             listener: None,
             lock_created: false,
+            database_client,
         }
     }
 
