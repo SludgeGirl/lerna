@@ -1,4 +1,4 @@
-use std::net::Ipv4Addr;
+use std::{iter::Enumerate, net::Ipv4Addr};
 
 use cidr::{InetIterator, Ipv4Cidr, Ipv4Inet, errors::NetworkParseError};
 
@@ -6,28 +6,35 @@ const DEFAULT_IPV4_CIDR: Result<Ipv4Cidr, NetworkParseError> =
     Ipv4Cidr::new(Ipv4Addr::new(100, 64, 0, 0), 10);
 
 #[derive(Debug)]
-struct Ipv4Issuer {
-    cidr_range: InetIterator<Ipv4Addr>,
+pub struct Ipv4Issuer {
+    cidr_range: Enumerate<InetIterator<Ipv4Addr>>,
 }
 
 impl Ipv4Issuer {
-    fn new(ip_addr: Ipv4Addr, range: u8) -> Result<Self, NetworkParseError> {
+    pub fn new(ip_addr: Ipv4Addr, range: u8) -> Result<Self, NetworkParseError> {
         let cidr = Ipv4Cidr::new(ip_addr, range)?;
 
         Ok(Self {
-            cidr_range: cidr.iter(),
+            cidr_range: cidr.iter().enumerate(),
         })
     }
 
-    fn set_latest_ip(&mut self, latest_issued: Ipv4Addr) {
+    pub fn set_latest_ip(&mut self, latest_issued: Ipv4Addr) {
         self.position(|p| p.address() == latest_issued);
+    }
+
+    pub fn next_with_index(&mut self) -> Option<(usize, Ipv4Inet)> {
+        self.cidr_range.next()
     }
 }
 
 impl Default for Ipv4Issuer {
     fn default() -> Self {
         Self {
-            cidr_range: DEFAULT_IPV4_CIDR.expect("Default ipv4 cidr failed").iter(),
+            cidr_range: DEFAULT_IPV4_CIDR
+                .expect("Default ipv4 cidr failed")
+                .iter()
+                .enumerate(),
         }
     }
 }
@@ -36,13 +43,19 @@ impl Iterator for Ipv4Issuer {
     type Item = Ipv4Inet;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.cidr_range.next()
+        if let Some((_, ip)) = self.cidr_range.next() {
+            return Some(ip);
+        }
+
+        None
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::net::Ipv4Addr;
+
+    use cidr::Ipv4Inet;
 
     use crate::Ipv4Issuer;
 
@@ -82,6 +95,14 @@ mod tests {
         assert_eq!(
             issuer.next().unwrap().address(),
             Ipv4Addr::new(100, 64, 1, 0)
+        );
+
+        assert_eq!(
+            issuer.next_with_index().unwrap(),
+            (
+                257 as usize,
+                Ipv4Inet::new(Ipv4Addr::new(100, 64, 1, 1), 10).unwrap()
+            )
         );
     }
 }
