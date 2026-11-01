@@ -4,5 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+daemon-ipv4-issuer = { path = "../daemon-ipv4-issuer" }
+
 futures = "0.3.34"
 welds = "0.5.2"
+cidr = "0.3.2"

@@ -1,11 +1,16 @@
 use std::{
     fs::File,
     io::Read,
+    net::Ipv4Addr,
     os::unix::net::{UnixListener, UnixStream},
     path::{Path, PathBuf},
+    sync::{Arc, Mutex},
     thread,
 };
 
+use daemon_ipv4_issuer::Ipv4Issuer;
+use daemon_messages::Messages;
+use daemon_netns::Namespace;
 use log::info;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use welds::connections::any::AnyClient;
@@ -17,6 +22,8 @@ pub struct DaemonSocket {
     pub listener: Option<UnixListener>,
     pub lock_created: bool,
     pub database_client: AnyClient,
+    pub tailscale_device_ip_range: Arc<Mutex<Ipv4Issuer>>,
+    pub veth_ip_range: Arc<Mutex<Ipv4Issuer>>,
 }
 
 impl DaemonSocket {
@@ -26,6 +33,11 @@ impl DaemonSocket {
             listener: None,
             lock_created: false,
             database_client,
+            tailscale_device_ip_range: Arc::new(Mutex::new(Ipv4Issuer::default())),
+            veth_ip_range: Arc::new(Mutex::new(
+                Ipv4Issuer::new(Ipv4Addr::new(10, 0, 1, 0), 24)
+                    .expect("Failed to create default veth ip range issuer"),
+            )),
         }
     }
 
@@ -45,7 +57,12 @@ impl DaemonSocket {
                 match stream {
                     Ok(mut stream) => {
                         /* connection succeeded */
-                        thread::spawn(move || Self::handle_client(&mut stream));
+                        let ts_ip_issuer = self.tailscale_device_ip_range.clone();
+                        let veth_ip_issuer = self.tailscale_device_ip_range.clone();
+                        thread::spawn(move || {
+                            let stream = &mut stream;
+                            Self::handle_client(stream, ts_ip_issuer, veth_ip_issuer)
+                        });
                     }
                     Err(_) => {
                         /* connection failed */
@@ -57,10 +74,26 @@ impl DaemonSocket {
         Ok(())
     }
 
-    fn handle_client(stream: &mut UnixStream) {
+    fn handle_client(
+        stream: &mut UnixStream,
+        ts_ip_issuer: Arc<Mutex<Ipv4Issuer>>,
+        veth_ip_issuer: Arc<Mutex<Ipv4Issuer>>,
+    ) {
         let mut message = String::new();
         stream.read_to_string(&mut message).unwrap();
         info!("Recieved message: {}", message);
+        let decoded_message: Messages = serde_json::from_str(&message).unwrap();
+        info!("Recieved message: {:?}", decoded_message);
+
+        match decoded_message {
+            Messages::AddInstance { name } => {
+                Namespace::create(&name, ts_ip_issuer, veth_ip_issuer);
+            }
+            Messages::DeleteInstance { name } => todo!(),
+            Messages::Status { namespace } => todo!(),
+            Messages::Up { name } => todo!(),
+            Messages::Down { name } => todo!(),
+        }
     }
 
     fn check_for_lock(&self) -> Result<(), std::io::Error> {

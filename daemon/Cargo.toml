@@ -4,10 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+daemon-messages = { path = "../daemon-messages" }
+daemon-ipv4-issuer = { path = "../daemon-ipv4-issuer" }
+daemon-netns = { path = "../daemon-netns" }
+
 env_logger = "0.11.11"
 log = "0.4.35"
 sysinfo = "0.40.1"
-daemon-messages = { path = "../daemon-messages" }
 tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread"] }
 welds = { version = "0.5.2", features = ["sqlite"] }
 cidr = "0.3.2"
