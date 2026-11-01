@@ -10,3 +10,6 @@ sysinfo = "0.40.1"
 daemon-messages = { path = "../daemon-messages" }
 tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread"] }
 welds = { version = "0.5.2", features = ["sqlite"] }
+cidr = "0.3.2"
+serde_json = "1.0.154"
+sqlx = { version = "0.9.0", features = ["runtime-tokio"] }

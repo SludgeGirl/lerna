@@ -13,7 +13,7 @@ async fn main() -> std::io::Result<()> {
         .filter_level(log::LevelFilter::Info)
         .init();
 
-    let connection_string = format!("sqlite::file:{}", DEFAULT_DATABASE_PATH);
+    let connection_string = format!("sqlite://{}", DEFAULT_DATABASE_PATH);
     let client = welds::connections::connect(connection_string)
         .await
         .unwrap();
