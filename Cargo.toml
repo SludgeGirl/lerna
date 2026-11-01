@@ -1,3 +1,3 @@
 [workspace]
 resolver = "3"
-members = ["cli", "daemon", "daemon-messages"]
+members = ["cli", "daemon", "daemon-messages", "daemon-netns"]
